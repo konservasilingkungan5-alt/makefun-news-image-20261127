@@ -563,7 +563,17 @@ def build_page():
 
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "/output/entry.png"
-    save_png(build_page(), out)
+    sf = build_page()
+    data = png_bytes(sf)
+    # Self-check before writing: the entry must be a 1024x1024 PNG and
+    # stay well under the 1 MiB intake cap. Fail loudly instead of
+    # silently writing a broken or oversized file.
+    if len(data) > 1024 * 1024:
+        raise SystemExit(f"entry.png is {len(data)} bytes, over the 1 MiB cap")
+    if struct.unpack(">II", data[16:24]) != (W, H):
+        raise SystemExit("entry.png is not 1024x1024")
+    save_png(sf, out)
+    print(f"wrote {W}x{H} PNG, {len(data)} bytes, to {out}")
 
 
 if __name__ == "__main__":
